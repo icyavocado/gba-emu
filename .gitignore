@@ -1,3 +1,4 @@
-roms
-.vscode
+roms/
+.vscode/
+__pycache__/
 .env
