@@ -1081,3 +1081,30 @@ class CPU:
       (0xf7, 20, 32),
       (0xff, 38, 32)
     ]
+
+    # Description:
+    #   Pop two bytes from stack & jump to that address.
+    RET = [
+      (0xc9, 8)
+    ]
+
+    # Description:
+    #   Return if following condition is true:
+    # Use with:
+    #   cc = NZ, Return if Z flag is reset.
+    #   cc = Z, Return if Z flag is set.
+    #   cc = NC, Return if C flag is reset.
+    #   cc = C, Return if C flag is set.
+    RETcc = [
+      (0xc0, "nz", 8),
+      (0xc8, "z", 8),
+      (0xd0, "nc", 8),
+      (0xd8, "c", 8),
+    ]
+
+    # Description:
+    #   Pop two bytes from stack & jump to that address then
+    #   enable interrupts.
+    RETI = [
+      (0xd9, 8)
+    ]
