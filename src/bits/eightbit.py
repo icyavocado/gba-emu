@@ -10,7 +10,9 @@ class EightBit:
     self._wrapOver(newBit)
 
   def _wrapOver(self, newBit):
+    if isinstance(newBit, bytes):
+      newBit = int(newBit, 8)
     if newBit >= 0 and newBit <= 255:
-      return newBit
+      return bytes(newBit)
     else:
-      return newBit % 256
+      return bytes(int(newBit) % 256)

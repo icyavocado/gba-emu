@@ -10,6 +10,8 @@ class SixteenBit:
     self._wrapOver(newBit)
 
   def _wrapOver(self, newBit):
+    if isinstance(newBit, bytes):
+      newBit = int(newBit, 16)
     if newBit >= 0 and newBit <= 65535:
       return newBit
     else:

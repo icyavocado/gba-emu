@@ -1,0 +1,4 @@
+#!/bin/bash
+
+export PYTHONPATH=/home/icyavocado/github/gba-emu
+nodemon --exec "python3" -- src/main.py
