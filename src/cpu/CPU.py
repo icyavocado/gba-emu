@@ -23,6 +23,12 @@ class FlagsRegister:
   def get(self):
     return +(self.Z) << 7 | +(self.N) << 6 | +(self.H) << 5 | +(self.C) << 4;
 
+  def set(self, flag, value):
+    self[flag] = value
+
+  def reset(self, flag):
+    self[flag] = False
+
 class Clock:
   def __init__(self):
     self.m = SixteenBit(0)
@@ -56,7 +62,12 @@ class Register:
     return self[address]
 
   def set(address, value):
-    self[address].set(value)
+    if isinstance(address, str):
+      if len(address) == 1:
+        self[address] = value
+      else: 
+        self[address[0]] = value >> 8
+        self[address[1]] = value
 
 class RAM:
   def __init__(self):
@@ -91,10 +102,6 @@ class CPU:
 
   def __init__(self, rom):
     self.ops = [0] * pow(2, 9)
-    for op in range(0, pow(2, 9)):
-      def f():
-        return 1
-      self.ops[op] = f
     self.rom = rom
     self.r = Register()
     self.c = Clock()
@@ -105,24 +112,22 @@ class CPU:
   def reset(self):
     self.r.pc.set(0x100)
     self.ram = RAM()
-    self.populate8BitLoads()
+    self.populateOpCodes()
 
   def start(self):
     self.ram.addROM(self.rom)
+    print(self.ops)
     self.cycle()
 
   def cycle(self):
     if self.running:
+      print(self.ram.get(self.r.pc.get()))
       self.ops[self.ram.get(self.r.pc.get())]()
       self.ram.printMemoryToFile(0xFF01)
       self.ram.printMemoryToFile(0xFF02)
       # INCREASE pc by 1 every cycle
       self.r.pc.set(self.r.pc.get() + 1)
-      Timer(1 / 100, self.cycle).start()
-
-  def de(opcode):
-    # TODO: Find opcode destructure
-    return 0
+      Timer(1000, self.cycle).start()
 
   def get8(self):
     return self.ram.get(self.r.pc.get());
@@ -130,13 +135,7 @@ class CPU:
   def get16(self):
     return self.ram.get(self.r.pc.get()) << 8 | self.ram.get(self.r.pc.get() + 1)
 
-# 8-Bit Loads
-  def populate8BitLoads(self):
-
-    def op_0x00():
-      v = 1 + 1
-
-    self.ops[0] = op_0x00
+  def populateOpCodes(self):
 
     LDnn_n = [
       (0x06, "b", 8),
@@ -555,6 +554,12 @@ class CPU:
       (0x2c, "l", 4),
       (0x34, "hl", 12)
     ]
+    for op in LDn_nn:
+      op_code, registers, cycles = op
+      def f(op_code, register, cycles):
+        self.r.set(register, self.r.get(registers))
+        self.clock.c.set(self.clock.c + cycles)
+      self.ops[op_code] = f
 
     # Description:
     #   Decrement register n.
@@ -590,10 +595,10 @@ class CPU:
     #   H - Set if carry from bit 11.
     #   C - Set if carry from bit 15.
     ADDHL_n = [
-      (0x09, "HL", "BC" 8),
-      (0x19, "HL", "DE" 8),
-      (0x29, "HL", "HL" 8),
-      (0x39, "HL", "SP" 8)
+      (0x09, "HL", "BC", 8),
+      (0x19, "HL", "DE", 8),
+      (0x29, "HL", "HL", 8),
+      (0x39, "HL", "SP", 8)
     ]
 
     # Description:
@@ -710,6 +715,12 @@ class CPU:
     NOP = [
       (0x00, 4)
     ]
+    for op in NOP:
+      op_code, cycles = op
+      def f(op_code, register, cycles):
+        self.clock.c.set(self.clock.c + cycles)
+        print("NOP")
+      self.ops[op_code] = f
 
     # Description:
     #   Power down CPU until an interrupt occurs. Use this
@@ -1072,14 +1083,14 @@ class CPU:
     # Use with:
     #   n = $00,$08,$10,$18,$20,$28,$30,$38
     RSTn = [
-      (0xc7, 00, 32),
-      (0xcf, 08, 32),
-      (0xd7, 10, 32),
-      (0xdf, 18, 32),
-      (0xe7, 20, 32),
-      (0xef, 28, 32),
-      (0xf7, 20, 32),
-      (0xff, 38, 32)
+      (0xc7, 0x00, 32),
+      (0xcf, 0x08, 32),
+      (0xd7, 0x10, 32),
+      (0xdf, 0x18, 32),
+      (0xe7, 0x20, 32),
+      (0xef, 0x28, 32),
+      (0xf7, 0x20, 32),
+      (0xff, 0x38, 32)
     ]
 
     # Description:
